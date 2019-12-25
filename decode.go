@@ -22,9 +22,8 @@ import (
 	"bytes"
 	"io"
 	"reflect"
-)
+	"sync"
 
-import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -45,14 +44,33 @@ var (
 	ErrIllegalRefIndex = perrors.Errorf("illegal ref index")
 )
 
+var (
+	readerPool = sync.Pool{
+		New: func() interface{} {
+			return bufio.NewReader(nil)
+		},
+	}
+)
+
 // NewDecoder generate a decoder instance
 func NewDecoder(b []byte) *Decoder {
-	return &Decoder{reader: bufio.NewReader(bytes.NewReader(b)), typeRefs: &TypeRefs{records: map[string]bool{}}}
+	bufioReader := readerPool.Get().(*bufio.Reader)
+	bufioReader.Reset(bytes.NewReader(b))
+
+	return &Decoder{reader: bufioReader, typeRefs: &TypeRefs{records: map[string]bool{}}}
 }
 
-// NewDecoder generate a decoder instance with skip
+// PutPool 连接池回收
+func (d *Decoder) PutPool() {
+	readerPool.Put(d.reader)
+}
+
+// NewDecoderWithSkip generate a decoder instance with skip
 func NewDecoderWithSkip(b []byte) *Decoder {
-	return &Decoder{reader: bufio.NewReader(bytes.NewReader(b)), typeRefs: &TypeRefs{records: map[string]bool{}}, isSkip: true}
+	bufioReader := readerPool.Get().(*bufio.Reader)
+	bufioReader.Reset(bytes.NewReader(b))
+	//defer readerPool.Put(bufioReader) //bufio.NewReaderSize(buf, buf.Len())
+	return &Decoder{reader: bufioReader, typeRefs: &TypeRefs{records: map[string]bool{}}, isSkip: true}
 }
 
 /////////////////////////////////////////
