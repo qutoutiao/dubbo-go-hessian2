@@ -21,9 +21,7 @@ import (
 	"io"
 	"reflect"
 	"strings"
-)
 
-import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -485,6 +483,8 @@ func (d *Decoder) getStructDefByIndex(idx int) (reflect.Type, classInfo, error) 
 		if !d.isSkip {
 			err = perrors.Errorf("can not find go type name %s in registry", cls.javaName)
 		}
+		// 修改nil为struct对象, 保证返回正常数据, 因为在代理场景下,是不需要解析附件中的对象反射的
+		// reflect.TypeOf(struct{}{})
 		return nil, cls, err
 	}
 
@@ -518,8 +518,15 @@ func (d *Decoder) skip(cls classInfo) error {
 	if len(cls.fieldNameList) < 1 {
 		return nil
 	}
-	_, err := d.DecodeValue()
-	return err
+
+	// 此处需要遍历对象元素
+	for range cls.fieldNameList {
+		_, err := d.DecodeValue()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (d *Decoder) decObject(flag int32) (interface{}, error) {
