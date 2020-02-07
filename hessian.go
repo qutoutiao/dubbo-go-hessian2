@@ -201,7 +201,7 @@ func (h *HessianCodec) ReadBody(rspObj interface{}) error {
 	case PackageRequest | PackageHeartbeat, PackageResponse | PackageHeartbeat:
 	case PackageRequest:
 		if rspObj != nil {
-			decoder := NewDecoder(buf[:])
+			decoder := NewDecoderWithSkip(buf[:])
 			defer decoder.PutPool()
 			if err = unpackRequestBody(decoder, rspObj); err != nil {
 				return perrors.WithStack(err)
