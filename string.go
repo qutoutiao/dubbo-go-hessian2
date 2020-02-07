@@ -26,10 +26,9 @@ import (
 	"strconv"
 	"unicode/utf8"
 	"unsafe"
-)
 
-import (
 	gxbytes "github.com/dubbogo/gost/bytes"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -256,7 +255,7 @@ func (d *Decoder) decString(flag int32) (string, error) {
 		charTotal int32
 		last      bool
 		s         string
-		r         rune
+		//r         rune
 	)
 
 	if flag != TAG_READ {
@@ -318,17 +317,18 @@ func (d *Decoder) decString(flag int32) (string, error) {
 		charTotal = l
 		charCount := 0
 
-		runeData := make([]rune, charTotal)
+		runeData := make([]byte, charTotal)
+		/**
 		runeIndex := 0
-
 		byteCount := 0
 		byteLen := 0
 		charLen := 0
+		*/
 
 		for {
 			if int32(charCount) == charTotal {
 				if last {
-					return string(runeData[:runeIndex]), nil
+					return string(runeData), nil
 				}
 
 				b, _ := d.readByte()
@@ -348,31 +348,42 @@ func (d *Decoder) decString(flag int32) (string, error) {
 						return s, perrors.WithStack(err)
 					}
 					charTotal += l
-					bs := make([]rune, charTotal)
+					bs := make([]byte, charTotal)
 					copy(bs, runeData)
 					runeData = bs
 
 				default:
 					return s, perrors.New("expect string tag")
 				}
-			}
-
-			r, charLen, byteLen, err = decodeUcs4Rune(d.reader)
-			if err != nil {
-				if err == io.EOF {
-					break
+			} else {
+				b, err := d.readByte()
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+					return s, perrors.WithStack(err)
 				}
-				return s, perrors.WithStack(err)
+				runeData[charCount] = b
+				charCount++
 			}
+			/**
+			   r, charLen, byteLen, err = decodeUcs4Rune(d.reader)
+			   if err != nil {
+				   if err == io.EOF {
+					   break
+				   }
+				   return s, perrors.WithStack(err)
+			   }
 
-			runeData[runeIndex] = r
-			runeIndex++
+			   runeData[runeIndex] = r
+			   runeIndex++
 
-			charCount += charLen
-			byteCount += byteLen
+			   charCount += charLen
+			   byteCount += byteLen
+			*/
 		}
 
-		return string(runeData[:runeIndex]), nil
+		return string(runeData), nil
 	}
 
 	return s, perrors.Errorf("unknown string tag %#x\n", tag)
