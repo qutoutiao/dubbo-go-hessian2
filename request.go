@@ -23,9 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -320,17 +318,26 @@ func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
 	}
 	req[5] = args
 
-	attachments, err := decoder.Decode()
-	if err != nil {
-		return perrors.WithStack(err)
-	}
-	if v, ok := attachments.(map[interface{}]interface{}); ok {
-		v[DUBBO_VERSION_KEY] = dubboVersion
-		req[6] = ToMapStringString(v)
-		return nil
+	// 增加for循环,防止前面解析错误,拿不到interface
+	for {
+		attachments, err := decoder.Decode()
+		if err != nil {
+			return perrors.WithStack(err)
+		}
+
+		if v, ok := attachments.(map[interface{}]interface{}); ok {
+			if _, ok := v[INTERFACE_KEY]; !ok {
+				// 获取不到interface的key, 说明不是最后的map
+				continue
+			}
+
+			v[DUBBO_VERSION_KEY] = dubboVersion
+			req[6] = ToMapStringString(v)
+			return nil
+		}
 	}
 
-	return perrors.Errorf("get wrong attachments: %+v", attachments)
+	//return perrors.Errorf("get wrong attachments: %+v", attachments)
 }
 
 func ToMapStringString(origin map[interface{}]interface{}) map[string]string {
