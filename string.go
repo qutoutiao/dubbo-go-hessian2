@@ -255,7 +255,7 @@ func (d *Decoder) decString(flag int32) (string, error) {
 		charTotal int32
 		last      bool
 		s         string
-		//r         rune
+		r         rune
 	)
 
 	if flag != TAG_READ {
@@ -317,18 +317,17 @@ func (d *Decoder) decString(flag int32) (string, error) {
 		charTotal = l
 		charCount := 0
 
-		runeData := make([]byte, charTotal)
-		/**
+		runeData := make([]rune, charTotal)
 		runeIndex := 0
+
 		byteCount := 0
 		byteLen := 0
 		charLen := 0
-		*/
 
 		for {
 			if int32(charCount) == charTotal {
 				if last {
-					return string(runeData), nil
+					return string(runeData[:runeIndex]), nil
 				}
 
 				b, _ := d.readByte()
@@ -348,42 +347,31 @@ func (d *Decoder) decString(flag int32) (string, error) {
 						return s, perrors.WithStack(err)
 					}
 					charTotal += l
-					bs := make([]byte, charTotal)
+					bs := make([]rune, charTotal)
 					copy(bs, runeData)
 					runeData = bs
 
 				default:
 					return s, perrors.New("expect string tag")
 				}
-			} else {
-				b, err := d.readByte()
-				if err != nil {
-					if err == io.EOF {
-						break
-					}
-					return s, perrors.WithStack(err)
-				}
-				runeData[charCount] = b
-				charCount++
 			}
-			/**
-			   r, charLen, byteLen, err = decodeUcs4Rune(d.reader)
-			   if err != nil {
-				   if err == io.EOF {
-					   break
-				   }
-				   return s, perrors.WithStack(err)
-			   }
 
-			   runeData[runeIndex] = r
-			   runeIndex++
+			r, charLen, byteLen, err = decodeUcs4Rune(d.reader)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return s, perrors.WithStack(err)
+			}
 
-			   charCount += charLen
-			   byteCount += byteLen
-			*/
+			runeData[runeIndex] = r
+			runeIndex++
+
+			charCount += charLen
+			byteCount += byteLen
 		}
 
-		return string(runeData), nil
+		return string(runeData[:runeIndex]), nil
 	}
 
 	return s, perrors.Errorf("unknown string tag %#x\n", tag)
