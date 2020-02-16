@@ -19,13 +19,12 @@ package hessian
 
 import (
 	"encoding/binary"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -309,12 +308,19 @@ func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
 	}
 	req[4] = argsTypes
 
+	// 设置临时数据
+	req[5] = make([]interface{}, 1)
+	req[6] = map[string]string{
+		"interface": "error.interface",
+	}
+
 	ats := DescRegex.FindAllString(argsTypes.(string), -1)
 	var arg interface{}
 	for i := 0; i < len(ats); i++ {
 		arg, err = decoder.Decode()
 		if err != nil {
-			return perrors.WithStack(err)
+			// 因为args里的数据,目前并不重要,所以如果解析错误, 就只是记录错误日志
+			return ignoreErrorToLog("args.error", perrors.WithStack(err))
 		}
 		args = append(args, arg)
 	}
@@ -322,7 +328,9 @@ func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
 
 	attachments, err := decoder.Decode()
 	if err != nil {
-		return perrors.WithStack(err)
+		// 因为attachments里的数据,目前并不重要,所以如果解析错误, 就只是记录错误日志
+		return ignoreErrorToLog("att.error", perrors.WithStack(err))
+		//return perrors.WithStack(err)
 	}
 	if v, ok := attachments.(map[interface{}]interface{}); ok {
 		v[DUBBO_VERSION_KEY] = dubboVersion
@@ -330,7 +338,14 @@ func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
 		return nil
 	}
 
-	return perrors.Errorf("get wrong attachments: %+v", attachments)
+	// 因为attachments里的数据,目前并不重要,所以如果解析错误, 就只是记录错误日志
+	return ignoreErrorToLog("att.error", perrors.Errorf("get wrong attachments: %+v", attachments))
+	//return perrors.Errorf("get wrong attachments: %+v", attachments)
+}
+
+func ignoreErrorToLog(text string, err error) error {
+	log.Println(text, err)
+	return nil
 }
 
 func ToMapStringString(origin map[interface{}]interface{}) map[string]string {
