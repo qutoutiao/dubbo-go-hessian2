@@ -137,8 +137,8 @@ func (d *Decoder) decType() (string, error) {
 		arr [1]byte
 		buf []byte
 		tag byte
-		idx int32
-		typ reflect.Type
+		//idx int32
+		//typ reflect.Type
 	)
 
 	buf = arr[:1]
@@ -151,6 +151,7 @@ func (d *Decoder) decType() (string, error) {
 		return d.decString(int32(tag))
 	}
 
+	/**
 	if idx, err = d.decInt32(int32(tag)); err != nil {
 		return "", perrors.WithStack(err)
 	}
@@ -159,6 +160,7 @@ func (d *Decoder) decType() (string, error) {
 	if err == nil {
 		return typ.String(), nil
 	}
+	*/
 
 	return "", err
 }
