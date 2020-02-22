@@ -47,7 +47,7 @@ var (
 var (
 	readerPool = sync.Pool{
 		New: func() interface{} {
-			return bufio.NewReader(nil)
+			return bufio.NewReaderSize(nil, 8192)
 		},
 	}
 )
