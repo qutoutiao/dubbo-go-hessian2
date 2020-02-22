@@ -19,7 +19,7 @@ package hessian
 
 import (
 	"encoding/binary"
-	"log"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -344,7 +344,8 @@ func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
 }
 
 func ignoreErrorToLog(text string, err error) error {
-	log.Println(text, err)
+	//fmt.Printf("%s %s %+v", time.Now().Format("2006-01-02 15:04:05"), text, err)
+	fmt.Printf("%s %s %s", time.Now().Format("2006-01-02 15:04:05"), text, err.Error())
 	return nil
 }
 
