@@ -345,7 +345,7 @@ func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
 
 func ignoreErrorToLog(text string, err error) error {
 	//fmt.Printf("%s %s %+v", time.Now().Format("2006-01-02 15:04:05"), text, err)
-	fmt.Printf("%s %s %s", time.Now().Format("2006-01-02 15:04:05"), text, err.Error())
+	fmt.Printf("%s %s %s \n", time.Now().Format("2006-01-02 15:04:05"), text, err.Error())
 	return nil
 }
 
