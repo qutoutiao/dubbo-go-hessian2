@@ -258,7 +258,8 @@ END:
 }
 
 // hessian decode request body
-func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
+// disableDecode 0 不关闭解析参数和附件 1 关闭解析参数和附件
+func unpackRequestBody(decoder *Decoder, reqObj interface{}, disableDecode int) error {
 
 	if decoder == nil {
 		return perrors.Errorf("@decoder is nil")
@@ -314,33 +315,40 @@ func unpackRequestBody(decoder *Decoder, reqObj interface{}) error {
 		"interface": "error.interface",
 	}
 
-	ats := DescRegex.FindAllString(argsTypes.(string), -1)
-	var arg interface{}
-	for i := 0; i < len(ats); i++ {
-		arg, err = decoder.Decode()
-		if err != nil {
-			// 因为args里的数据,目前并不重要,所以如果解析错误, 就只是记录错误日志
-			return ignoreErrorToLog("args.error", perrors.WithStack(err))
+	if disableDecode == 0 {
+		ats := DescRegex.FindAllString(argsTypes.(string), -1)
+		var arg interface{}
+		for i := 0; i < len(ats); i++ {
+			arg, err = decoder.Decode()
+			if err != nil {
+				// 因为args里的数据,目前并不重要,所以如果解析错误, 就只是记录错误日志
+				return ignoreErrorToLog("args.error", perrors.WithStack(err))
+			}
+			args = append(args, arg)
 		}
-		args = append(args, arg)
-	}
-	req[5] = args
+		req[5] = args
 
-	attachments, err := decoder.Decode()
-	if err != nil {
+		attachments, err := decoder.Decode()
+		if err != nil {
+			// 因为attachments里的数据,目前并不重要,所以如果解析错误, 就只是记录错误日志
+			return ignoreErrorToLog("att.error", perrors.WithStack(err))
+			//return perrors.WithStack(err)
+		}
+		if v, ok := attachments.(map[interface{}]interface{}); ok {
+			v[DUBBO_VERSION_KEY] = dubboVersion
+			req[6] = ToMapStringString(v)
+			return nil
+		}
+
 		// 因为attachments里的数据,目前并不重要,所以如果解析错误, 就只是记录错误日志
-		return ignoreErrorToLog("att.error", perrors.WithStack(err))
-		//return perrors.WithStack(err)
-	}
-	if v, ok := attachments.(map[interface{}]interface{}); ok {
-		v[DUBBO_VERSION_KEY] = dubboVersion
-		req[6] = ToMapStringString(v)
+		return ignoreErrorToLog("att.error", perrors.Errorf("get wrong attachments: %+v", attachments))
+		//return perrors.Errorf("get wrong attachments: %+v", attachments)
+	} else {
+		req[6] = map[string]string{
+			"interface": "disable.interface",
+		}
 		return nil
 	}
-
-	// 因为attachments里的数据,目前并不重要,所以如果解析错误, 就只是记录错误日志
-	return ignoreErrorToLog("att.error", perrors.Errorf("get wrong attachments: %+v", attachments))
-	//return perrors.Errorf("get wrong attachments: %+v", attachments)
 }
 
 func ignoreErrorToLog(text string, err error) error {

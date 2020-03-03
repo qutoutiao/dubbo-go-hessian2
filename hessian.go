@@ -170,7 +170,7 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 }
 
 // ReadBody uses hessian codec to read response body
-func (h *HessianCodec) ReadBody(rspObj interface{}) error {
+func (h *HessianCodec) ReadBody(rspObj interface{}, disableDecode int) error {
 
 	if h.reader.Buffered() < h.bodyLen {
 		return ErrBodyNotEnough
@@ -203,7 +203,7 @@ func (h *HessianCodec) ReadBody(rspObj interface{}) error {
 		if rspObj != nil {
 			decoder := NewDecoderWithSkip(buf[:])
 			defer decoder.PutPool()
-			if err = unpackRequestBody(decoder, rspObj); err != nil {
+			if err = unpackRequestBody(decoder, rspObj, disableDecode); err != nil {
 				return perrors.WithStack(err)
 			}
 		}
@@ -239,7 +239,7 @@ func (h *HessianCodec) ReadAttachments() (map[string]string, error) {
 		decoder := NewDecoderWithSkip(buf[:])
 		defer decoder.PutPool()
 		rspObj := make([]interface{}, 7)
-		if err = unpackRequestBody(decoder, rspObj); err != nil {
+		if err = unpackRequestBody(decoder, rspObj, 0); err != nil {
 			return nil, perrors.WithStack(err)
 		}
 		return rspObj[6].(map[string]string), nil
