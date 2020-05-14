@@ -23,9 +23,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,7 +69,7 @@ func doTestResponse(t *testing.T, packageType PackageType, responseStatus byte, 
 	assert.Equal(t, int64(1), h.ID)
 	assert.Equal(t, responseStatus, h.ResponseStatus)
 
-	err = codecR.ReadBody(decodedResponse)
+	err = codecR.ReadBody(decodedResponse, 0)
 	assert.Nil(t, err)
 	t.Log(decodedResponse)
 
@@ -154,7 +152,7 @@ func doTestRequest(t *testing.T, packageType PackageType, responseStatus byte, b
 	assert.Equal(t, responseStatus, h.ResponseStatus)
 
 	c := make([]interface{}, 7)
-	err = codecR.ReadBody(c)
+	err = codecR.ReadBody(c, 0)
 	assert.Nil(t, err)
 	t.Log(c)
 	assert.True(t, len(body.([]interface{})) == len(c[5].([]interface{})))
